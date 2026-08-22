@@ -2,7 +2,7 @@ import { v2 as cloudinary } from "cloudinary";
 import { ValidationError } from "../types/app-error.js";
 
 const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-const uploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET ?? "notebookllm";
+const uploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET ?? "bookllm";
 const apiKey = process.env.CLOUDINARY_API_KEY;
 const apiSecret = process.env.CLOUDINARY_API_SECRET;
 
@@ -53,6 +53,31 @@ export function getSignedCloudinaryDownloadUrl(
     });
 }
 
+type CloudinaryError = {
+    message?: string;
+    http_code?: number;
+    name?: string;
+};
+
+function toUploadError(error: unknown): ValidationError {
+    const cloudinaryError = error as CloudinaryError;
+
+    if (
+        cloudinaryError.http_code === 403 ||
+        cloudinaryError.name === "UnexpectedResponse"
+    ) {
+        return new ValidationError(
+            "Cloudinary rejected the upload: your API key is missing Upload permission. In Cloudinary Dashboard → Settings → API Keys, use the main API secret or create a key with Upload enabled.",
+        );
+    }
+
+    if (cloudinaryError.message) {
+        return new ValidationError(cloudinaryError.message);
+    }
+
+    return new ValidationError("Cloudinary upload failed");
+}
+
 async function signedUpload(
     buffer: Buffer,
     filename: string,
@@ -65,11 +90,7 @@ async function signedUpload(
             },
             (error, result) => {
                 if (error || !result) {
-                    reject(
-                        error instanceof Error
-                            ? error
-                            : new ValidationError("Cloudinary upload failed"),
-                    );
+                    reject(toUploadError(error));
                     return;
                 }
 
@@ -99,7 +120,7 @@ async function unsignedUpload(
         filename,
     );
     form.append("upload_preset", uploadPreset);
-    form.append("folder", "chaibook/pdfs");
+    form.append("folder", "bookllm/pdfs");
 
     const response = await fetch(
         `https://api.cloudinary.com/v1_1/${cloudName}/raw/upload`,
