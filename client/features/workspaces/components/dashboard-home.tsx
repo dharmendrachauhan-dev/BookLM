@@ -112,7 +112,7 @@ export function DashboardHome({ userName }: DashboardHomeProps) {
                         <span className="flex size-8 items-center justify-center rounded-xl bg-primary/15 text-base">
                             📚
                         </span>
-                        Chaibook
+                        BookLM
                     </Link>
 
                     <div className="flex items-center gap-1.5 sm:gap-2">
