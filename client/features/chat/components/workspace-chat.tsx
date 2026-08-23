@@ -35,6 +35,7 @@ import {
     SelectContent,
     SelectItem,
     SelectTrigger,
+    SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -262,6 +263,10 @@ export function WorkspaceChat({
         return "Untitled chat";
     }, [conversationId, activeConversation?.title, messages]);
 
+    const hasConversationInList = conversationId
+        ? conversations.some((conversation) => conversation.id === conversationId)
+        : false;
+
     useEffect(() => {
         if (!conversationId) {
             setMessages([]);
@@ -370,12 +375,15 @@ export function WorkspaceChat({
                     }}
                 >
                     <SelectTrigger className="max-w-sm flex-1">
-                        <span className="line-clamp-1 text-left">
-                            {conversationLabel}
-                        </span>
+                        <SelectValue placeholder="New chat" />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="new">New chat</SelectItem>
+                        {conversationId && !hasConversationInList ? (
+                            <SelectItem value={conversationId}>
+                                {conversationLabel}
+                            </SelectItem>
+                        ) : null}
                         {conversations.map((conversation) => (
                             <SelectItem
                                 key={conversation.id}
