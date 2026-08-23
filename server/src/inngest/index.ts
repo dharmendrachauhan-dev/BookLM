@@ -1,5 +1,6 @@
 import { findChunksBySourceId } from "../repositories/source-chunk.repository.js";
 import { findSourceById } from "../repositories/source.repository.js";
+import { processArtifactById } from "../services/artifact.service.js";
 import { chunkSourceContent, embedAndIndexSource, extractSourceContent, markSourceFailed, markSourceProcessing } from "../services/source-processing.service.js";
 import { inngest } from "./client.js";
 
@@ -62,7 +63,7 @@ export const generateArtifact = inngest.createFunction(
     async ({ event, step }) => {
         const { artifactId } = event.data;
 
-        // await step.run("generate", () => processArtifactById(artifactId));
+        await step.run("generate", () => processArtifactById(artifactId));
 
         return { artifactId, status: "READY" };
     },

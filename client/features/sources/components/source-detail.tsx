@@ -71,7 +71,7 @@ export function SourceDetail({ workspaceId, sourceId }: SourceDetailProps) {
         source.status === "PENDING" || source.status === "PROCESSING";
 
     return (
-        <div className="flex flex-1 flex-col gap-6 p-6">
+        <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-6">
             <div className="flex items-start gap-3">
                 <Button
                     nativeButton={false}

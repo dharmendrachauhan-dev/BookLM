@@ -47,7 +47,7 @@ export function ChatComposer({
     return (
         <form
             onSubmit={handleSubmit}
-            className="border-t bg-background p-4"
+            className="shrink-0 border-t bg-background p-4"
         >
             <div className="mx-auto flex max-w-3xl flex-col gap-2">
                 {onWebSearchChange ? (
@@ -82,7 +82,7 @@ export function ChatComposer({
                         onChange={(event) => setInput(event.target.value)}
                         placeholder="Ask about your sources…"
                         rows={1}
-                        className="min-h-11 max-h-40 resize-none"
+                        className="min-h-11 max-h-40 min-w-0 flex-1 resize-none"
                         onKeyDown={(event) => {
                             if (event.key === "Enter" && !event.shiftKey) {
                                 event.preventDefault();
@@ -94,6 +94,7 @@ export function ChatComposer({
                     <Button
                         type="submit"
                         size="icon"
+                        className="size-11 shrink-0"
                         disabled={disabled || isStreaming || !input.trim()}
                     >
                         {isStreaming ? (

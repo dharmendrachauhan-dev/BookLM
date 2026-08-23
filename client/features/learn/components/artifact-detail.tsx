@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
-import { ArrowLeftIcon } from "lucide-react";
+import { ArrowLeftIcon, RotateCcwIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError } from "@/shared/lib/api";
 import { ARTIFACT_TYPE_LABELS } from "../lib/constants";
 import { learnRoutes } from "../lib/routes";
-import { useArtifact } from "../hooks/use-artifacts";
+import { useArtifact, useRetryArtifact } from "../hooks/use-artifacts";
 import { ArtifactContentViewer } from "./artifact-content-viewer";
 import {
     ArtifactStatusBadge,
@@ -28,6 +28,7 @@ export function ArtifactDetail({
         workspaceId,
         artifactId,
     );
+    const retryArtifact = useRetryArtifact(workspaceId, artifactId);
 
     if (isLoading) {
         return (
@@ -68,10 +69,16 @@ export function ArtifactDetail({
     const isMindMap = artifact.type === "MINDMAP";
     const isProcessing =
         artifact.status === "PENDING" || artifact.status === "PROCESSING";
+    const canRetry =
+        artifact.status === "PENDING" || artifact.status === "FAILED";
 
     return (
         <div
-            className={`flex flex-1 flex-col ${isMindMap ? "min-h-0 gap-4 p-4 md:p-5" : "gap-6 p-6"}`}
+            className={`flex min-h-0 flex-1 flex-col ${
+                isMindMap
+                    ? "gap-4 overflow-hidden p-4 md:p-5"
+                    : "gap-6 overflow-y-auto p-6"
+            }`}
         >
             <div className="flex items-start gap-3">
                 <Button
@@ -101,8 +108,22 @@ export function ArtifactDetail({
 
             {isProcessing ? (
                 <div className="rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">
-                    Generating {ARTIFACT_TYPE_LABELS[artifact.type].toLowerCase()}
-                    …
+                    <p>
+                        Generating{" "}
+                        {ARTIFACT_TYPE_LABELS[artifact.type].toLowerCase()}…
+                    </p>
+                    {canRetry ? (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="mt-4"
+                            onClick={() => void retryArtifact.mutateAsync()}
+                            disabled={retryArtifact.isPending}
+                        >
+                            <RotateCcwIcon />
+                            Retry generation
+                        </Button>
+                    ) : null}
                 </div>
             ) : artifact.status === "FAILED" ? (
                 <div className="rounded-2xl border border-destructive/40 bg-destructive/5 p-6 text-sm">
@@ -114,6 +135,16 @@ export function ArtifactDetail({
                             {processingError}
                         </p>
                     ) : null}
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-4"
+                        onClick={() => void retryArtifact.mutateAsync()}
+                        disabled={retryArtifact.isPending}
+                    >
+                        <RotateCcwIcon />
+                        Retry generation
+                    </Button>
                 </div>
             ) : isMindMap ? (
                 <div className="min-h-0 flex-1">

@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
     CHAT_MODEL_LABELS,
     CHAT_MODELS,
+    useChatPreferences,
     type ChatModelId,
 } from "@/features/chat/stores/chat-preferences";
 import {
@@ -33,6 +34,7 @@ type WorkspaceSettingsFormProps = {
 export function WorkspaceSettingsForm({ workspace }: WorkspaceSettingsFormProps) {
     const router = useRouter();
     const updateWorkspace = useUpdateWorkspace(workspace.id);
+    const setChatModel = useChatPreferences((state) => state.setModel);
     const deleteWorkspace = useDeleteWorkspace();
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [title, setTitle] = useState(workspace.title);
@@ -53,6 +55,8 @@ export function WorkspaceSettingsForm({ workspace }: WorkspaceSettingsFormProps)
             icon: icon.trim() || undefined,
             defaultModel,
         });
+
+        setChatModel(workspace.id, defaultModel);
     }
 
     async function handleDelete() {
@@ -61,7 +65,7 @@ export function WorkspaceSettingsForm({ workspace }: WorkspaceSettingsFormProps)
     }
 
     return (
-        <div className="mx-auto flex w-full max-w-2xl flex-col gap-8 p-6">
+        <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col gap-8 overflow-y-auto overscroll-contain no-scrollbar p-6">
             <div>
                 <h2 className="font-heading text-xl font-semibold">
                     Workspace settings

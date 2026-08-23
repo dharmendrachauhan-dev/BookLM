@@ -9,7 +9,7 @@ import {
     updateArtifactRecord,
     type ArtifactRecord,
 } from "../repositories/artifact.repository.js";
-import { NotFoundError } from "../types/app-error.js";
+import { NotFoundError, ValidationError } from "../types/app-error.js";
 import {
     gatherSourceContext,
     generateArtifactContent,
@@ -131,6 +131,56 @@ export async function deleteArtifactForWorkspace(
 ) {
     await getArtifactForWorkspace(workspaceId, artifactId, userId);
     await deleteArtifactRecord(artifactId);
+}
+
+/**
+ * Re-enqueues generation for a stuck or failed artifact.
+ *
+ * @param workspaceId - Workspace the artifact belongs to
+ * @param artifactId - Artifact to retry
+ * @param userId - Authenticated user's id
+ * @returns Artifact reset to `PENDING` before the worker picks it up
+ * @throws {ValidationError} When the artifact is already ready or still processing
+ *
+ */
+export async function retryArtifactForWorkspace(
+    workspaceId: string,
+    artifactId: string,
+    userId: string,
+) {
+    const artifact = await getArtifactForWorkspace(
+        workspaceId,
+        artifactId,
+        userId,
+    );
+
+    if (artifact.status === "READY") {
+        throw new ValidationError("This learning tool has already been generated.");
+    }
+
+    if (artifact.status === "PROCESSING") {
+        throw new ValidationError(
+            "Generation is already in progress. Please wait a moment.",
+        );
+    }
+
+    const updated = await updateArtifactRecord(artifactId, {
+        status: "PENDING",
+        metadata: {
+            ...(typeof artifact.metadata === "object" && artifact.metadata
+                ? artifact.metadata
+                : {}),
+            processingError: undefined,
+            retriedAt: new Date().toISOString(),
+        },
+    });
+
+    await enqueueArtifactGeneration({
+        artifactId,
+        workspaceId,
+    });
+
+    return updated;
 }
 
 /**

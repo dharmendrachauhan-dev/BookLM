@@ -15,6 +15,7 @@ import {
     CHAT_MODEL_LABELS,
     CHAT_MODELS,
     useChatPreferences,
+    useWorkspaceChatPrefs,
     type ChatModelId,
 } from "@/features/chat/stores/chat-preferences";
 import { workspaceRoutes } from "../lib/routes";
@@ -27,9 +28,8 @@ type WorkspaceHeaderActionsProps = {
 export function WorkspaceHeaderActions({
     workspace,
 }: WorkspaceHeaderActionsProps) {
-    const getPrefs = useChatPreferences((state) => state.getPrefs);
     const setModel = useChatPreferences((state) => state.setModel);
-    const prefs = getPrefs(workspace.id, workspace.defaultModel);
+    const prefs = useWorkspaceChatPrefs(workspace.id, workspace.defaultModel);
 
     return (
         <div className="flex items-center gap-2">

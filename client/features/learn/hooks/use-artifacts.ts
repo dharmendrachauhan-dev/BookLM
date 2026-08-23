@@ -6,6 +6,7 @@ import {
     deleteArtifact,
     getArtifact,
     listArtifacts,
+    retryArtifact,
 } from "../lib/api";
 import type { CreateArtifactInput } from "../lib/types";
 
@@ -70,6 +71,23 @@ export function useDeleteArtifact(workspaceId: string) {
             queryClient.removeQueries({
                 queryKey: artifactKeys(workspaceId).detail(artifactId),
             });
+            void queryClient.invalidateQueries({
+                queryKey: artifactKeys(workspaceId).all,
+            });
+        },
+    });
+}
+
+export function useRetryArtifact(workspaceId: string, artifactId: string) {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: () => retryArtifact(workspaceId, artifactId),
+        onSuccess: (artifact) => {
+            queryClient.setQueryData(
+                artifactKeys(workspaceId).detail(artifactId),
+                artifact,
+            );
             void queryClient.invalidateQueries({
                 queryKey: artifactKeys(workspaceId).all,
             });

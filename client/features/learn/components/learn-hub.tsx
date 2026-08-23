@@ -25,7 +25,7 @@ export function LearnHub({ workspaceId }: LearnHubProps) {
     const deleteArtifact = useDeleteArtifact(workspaceId);
 
     return (
-        <div className="flex flex-1 flex-col gap-6 p-6">
+        <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="space-y-1">
                     <div className="flex items-center gap-2">

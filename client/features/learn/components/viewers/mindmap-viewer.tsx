@@ -441,7 +441,6 @@ function MindMapCanvas({ nodes, edges, workspaceId }: MindMapCanvasProps) {
                         target: edge.target,
                         sourceHandle: direction === 1 ? "sr" : "sl",
                         targetHandle: direction === 1 ? "tl" : "tr",
-                        type: "bezier",
                         animated: isSelected,
                         style: {
                             stroke: isSelected
@@ -540,8 +539,9 @@ function MindMapCanvas({ nodes, edges, workspaceId }: MindMapCanvasProps) {
                     </div>
                 </div>
 
-                <div className="relative min-h-0 flex-1">
+                <div className="relative h-full min-h-0 w-full flex-1">
                     <ReactFlow
+                        className="h-full w-full"
                         nodes={flowNodes}
                         edges={flowEdges}
                         nodeTypes={nodeTypes}
@@ -643,7 +643,7 @@ export function MindMapViewer({
                 </Button>
             </div>
 
-            <div className="min-h-0 flex-1">
+            <div className="h-full min-h-0 w-full flex-1">
                 <ReactFlowProvider>
                     <MindMapCanvas
                         nodes={nodes}

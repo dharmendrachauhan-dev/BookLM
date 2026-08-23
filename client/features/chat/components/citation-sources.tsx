@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import {
     BookOpenIcon,
     FileTextIcon,
@@ -14,7 +13,6 @@ import {
     AttachmentGroup,
     AttachmentMedia,
     AttachmentTitle,
-    AttachmentTrigger,
 } from "@/components/ui/attachment";
 import {
     HoverCard,
@@ -28,7 +26,6 @@ import {
 } from "@/components/ui/marker";
 import { SOURCE_TYPE_LABELS } from "@/features/sources/lib/constants";
 import type { SourceType } from "@/features/sources/lib/types";
-import { sourceRoutes } from "@/features/sources/lib/routes";
 import { uniqueCitationsBySource } from "../lib/citations";
 import type { ChatCitation } from "../lib/types";
 import { CitationPreview } from "./citation-preview";
@@ -90,14 +87,19 @@ export function CitationSources({
                         citation.sourceId ??
                         citation.url ??
                         citation.sourceTitle;
-                    const isWeb = citation.sourceType === "WEB" && citation.url;
 
                     return (
                         <HoverCard key={citationKey}>
                             <HoverCardTrigger
                                 delay={150}
                                 closeDelay={100}
-                                className="rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+                                render={
+                                    <div
+                                        role="button"
+                                        tabIndex={0}
+                                        className="rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+                                    />
+                                }
                             >
                                 <Attachment
                                     size="xs"
@@ -122,28 +124,6 @@ export function CitationSources({
                                             </AttachmentDescription>
                                         ) : null}
                                     </AttachmentContent>
-                                    {isWeb ? (
-                                        <AttachmentTrigger
-                                            render={
-                                                <a
-                                                    href={citation.url}
-                                                    target="_blank"
-                                                    rel="noreferrer"
-                                                />
-                                            }
-                                        />
-                                    ) : citation.sourceId ? (
-                                        <AttachmentTrigger
-                                            render={
-                                                <Link
-                                                    href={sourceRoutes.detail(
-                                                        workspaceId,
-                                                        citation.sourceId,
-                                                    )}
-                                                />
-                                            }
-                                        />
-                                    ) : null}
                                 </Attachment>
                             </HoverCardTrigger>
                             <HoverCardContent

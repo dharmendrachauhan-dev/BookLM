@@ -73,3 +73,19 @@ export const useChatPreferences = create<ChatPreferencesState>()(
         { name: "BookLLM-chat-preferences" },
     ),
 );
+
+export function useWorkspaceChatPrefs(
+    workspaceId: string,
+    defaultModel?: string,
+): WorkspaceChatPrefs {
+    const stored = useChatPreferences(
+        (state) => state.byWorkspace[workspaceId],
+    );
+
+    return (
+        stored ?? {
+            model: resolveModel(defaultModel),
+            webSearch: false,
+        }
+    );
+}

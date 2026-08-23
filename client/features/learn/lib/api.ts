@@ -32,3 +32,10 @@ export function deleteArtifact(workspaceId: string, artifactId: string) {
         { method: "DELETE" },
     );
 }
+
+export function retryArtifact(workspaceId: string, artifactId: string) {
+    return apiFetch<LearningArtifact>(
+        `/api/workspaces/${workspaceId}/artifacts/${artifactId}/retry`,
+        { method: "POST" },
+    );
+}

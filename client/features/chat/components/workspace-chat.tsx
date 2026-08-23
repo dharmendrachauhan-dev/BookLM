@@ -12,6 +12,7 @@ import {
     MessageSquarePlusIcon,
     Trash2Icon,
 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
     Message,
     MessageAvatar,
@@ -34,7 +35,6 @@ import {
     SelectContent,
     SelectItem,
     SelectTrigger,
-    SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -48,9 +48,13 @@ import {
 import { ChatMessageBody } from "./chat-message-body";
 import { CitationSources } from "./citation-sources";
 import { ChatComposer } from "./chat-composer";
-import type { ChatCitation } from "../lib/types";
+import type { ChatCitation, Conversation } from "../lib/types";
 import { workspaceRoutes } from "@/features/workspaces/lib/routes";
-import { useChatPreferences } from "../stores/chat-preferences";
+import { useSession } from "@/features/auth/hooks/use-session";
+import {
+    useChatPreferences,
+    useWorkspaceChatPrefs,
+} from "../stores/chat-preferences";
 import {
     downloadMarkdown,
     exportConversationMarkdown,
@@ -68,6 +72,70 @@ function getMessageText(message: UIMessage) {
         .join("");
 }
 
+function buildConversationTitle(text: string) {
+    const normalized = text.replace(/\s+/g, " ").trim();
+    if (!normalized) {
+        return "New chat";
+    }
+
+    return normalized.length > 72
+        ? `${normalized.slice(0, 72).trim()}…`
+        : normalized;
+}
+
+function getLastUserMessageTextFromBody(init?: RequestInit) {
+    if (!init?.body || typeof init.body !== "string") {
+        return null;
+    }
+
+    try {
+        const parsed = JSON.parse(init.body) as {
+            messages?: Array<{
+                role?: string;
+                parts?: Array<{ type?: string; text?: string }>;
+            }>;
+        };
+        const uiMessages = parsed.messages;
+        if (!Array.isArray(uiMessages)) {
+            return null;
+        }
+
+        for (let index = uiMessages.length - 1; index >= 0; index -= 1) {
+            const message = uiMessages[index];
+            if (message?.role !== "user" || !message.parts) {
+                continue;
+            }
+
+            const text = message.parts
+                .filter((part) => part.type === "text")
+                .map((part) => part.text ?? "")
+                .join("")
+                .trim();
+
+            if (text) {
+                return text;
+            }
+        }
+    } catch {
+        return null;
+    }
+
+    return null;
+}
+
+function getUserInitials(name?: string | null) {
+    if (!name?.trim()) {
+        return "U";
+    }
+
+    return name
+        .trim()
+        .split(/\s+/)
+        .slice(0, 2)
+        .map((part) => part[0]?.toUpperCase() ?? "")
+        .join("");
+}
+
 export function WorkspaceChat({
     workspaceId,
     defaultModel,
@@ -75,6 +143,7 @@ export function WorkspaceChat({
     const queryClient = useQueryClient();
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { data: session } = useSession();
     const askPrompt = searchParams.get("ask");
     const handledAskPrompt = useRef<string | null>(null);
     const [conversationId, setConversationId] = useState<string | null>(null);
@@ -82,9 +151,8 @@ export function WorkspaceChat({
         Record<string, ChatCitation[]>
     >({});
 
-    const getPrefs = useChatPreferences((state) => state.getPrefs);
     const setWebSearch = useChatPreferences((state) => state.setWebSearch);
-    const chatPrefs = getPrefs(workspaceId, defaultModel);
+    const chatPrefs = useWorkspaceChatPrefs(workspaceId, defaultModel);
 
     const { data: conversations = [], isLoading: conversationsLoading } =
         useConversations(workspaceId);
@@ -98,8 +166,32 @@ export function WorkspaceChat({
     );
 
     const handleConversationId = useCallback(
-        (id: string) => {
+        (id: string, title?: string | null) => {
             setConversationId(id);
+
+            queryClient.setQueryData<Conversation[]>(
+                chatKeys(workspaceId).conversations(),
+                (existing) => {
+                    const optimistic: Conversation = {
+                        id,
+                        workspaceId,
+                        title: title ?? null,
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString(),
+                    };
+
+                    if (!existing) {
+                        return [optimistic];
+                    }
+
+                    if (existing.some((conversation) => conversation.id === id)) {
+                        return existing;
+                    }
+
+                    return [optimistic, ...existing];
+                },
+            );
+
             void queryClient.invalidateQueries({
                 queryKey: chatKeys(workspaceId).conversations(),
             });
@@ -126,7 +218,11 @@ export function WorkspaceChat({
                     const newConversationId =
                         response.headers.get("X-Conversation-Id");
                     if (newConversationId) {
-                        handleConversationId(newConversationId);
+                        const userText = getLastUserMessageTextFromBody(init);
+                        const title = userText
+                            ? buildConversationTitle(userText)
+                            : null;
+                        handleConversationId(newConversationId, title);
                     }
 
                     return response;
@@ -146,6 +242,25 @@ export function WorkspaceChat({
     });
 
     const isStreaming = status === "streaming" || status === "submitted";
+
+    const conversationLabel = useMemo(() => {
+        if (!conversationId) {
+            return "New chat";
+        }
+
+        if (activeConversation?.title) {
+            return activeConversation.title;
+        }
+
+        const firstUserMessage = messages.find(
+            (message) => message.role === "user",
+        );
+        if (firstUserMessage) {
+            return buildConversationTitle(getMessageText(firstUserMessage));
+        }
+
+        return "Untitled chat";
+    }, [conversationId, activeConversation?.title, messages]);
 
     useEffect(() => {
         if (!conversationId) {
@@ -242,8 +357,8 @@ export function WorkspaceChat({
     }
 
     return (
-        <div className="flex min-h-0 flex-1 flex-col">
-            <div className="flex items-center gap-2 border-b px-4 py-3">
+        <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+            <div className="flex shrink-0 items-center gap-2 border-b bg-background px-4 py-3">
                 <Select
                     value={conversationId ?? "new"}
                     onValueChange={(value) => {
@@ -255,7 +370,9 @@ export function WorkspaceChat({
                     }}
                 >
                     <SelectTrigger className="max-w-sm flex-1">
-                        <SelectValue placeholder="Select conversation" />
+                        <span className="line-clamp-1 text-left">
+                            {conversationLabel}
+                        </span>
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="new">New chat</SelectItem>
@@ -305,7 +422,8 @@ export function WorkspaceChat({
                 <MessageScroller className="min-h-0 flex-1">
                     <MessageScrollerViewport>
                         <MessageScrollerContent className="mx-auto w-full max-w-3xl px-4 py-6">
-                            {conversationsLoading || messagesLoading ? (
+                            {conversationsLoading ||
+                            (messagesLoading && messages.length === 0) ? (
                                 <div className="space-y-4">
                                     <Skeleton className="h-16 w-2/3 rounded-3xl" />
                                     <Skeleton className="ml-auto h-16 w-1/2 rounded-3xl" />
@@ -350,11 +468,38 @@ export function WorkspaceChat({
                                                         isUser ? "end" : "start"
                                                     }
                                                 >
-                                                    {!isUser ? (
+                                                    {isUser ? (
                                                         <MessageAvatar className="size-8">
+                                                            <Avatar className="size-8">
+                                                                {session?.user
+                                                                    ?.image ? (
+                                                                    <AvatarImage
+                                                                        src={
+                                                                            session
+                                                                                .user
+                                                                                .image
+                                                                        }
+                                                                        alt={
+                                                                            session
+                                                                                .user
+                                                                                .name
+                                                                        }
+                                                                    />
+                                                                ) : null}
+                                                                <AvatarFallback>
+                                                                    {getUserInitials(
+                                                                        session
+                                                                            ?.user
+                                                                            ?.name,
+                                                                    )}
+                                                                </AvatarFallback>
+                                                            </Avatar>
+                                                        </MessageAvatar>
+                                                    ) : (
+                                                        <MessageAvatar className="size-8 self-start group-has-data-[slot=message-footer]/message:translate-y-0">
                                                             <BotIcon className="size-4" />
                                                         </MessageAvatar>
-                                                    ) : null}
+                                                    )}
                                                     <MessageContent>
                                                         <Bubble
                                                             align={
@@ -418,7 +563,7 @@ export function WorkspaceChat({
             </MessageScrollerProvider>
 
             {error ? (
-                <div className="border-t bg-destructive/5 px-4 py-2 text-sm text-destructive">
+                <div className="shrink-0 border-t bg-destructive/5 px-4 py-2 text-sm text-destructive">
                     {error.message}
                 </div>
             ) : null}

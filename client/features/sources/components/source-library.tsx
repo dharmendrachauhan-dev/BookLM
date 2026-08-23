@@ -44,7 +44,6 @@ import {
     SelectContent,
     SelectItem,
     SelectTrigger,
-    SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
@@ -106,7 +105,7 @@ export function SourceLibrary({ workspaceId }: SourceLibraryProps) {
     }
 
     return (
-        <div className="flex flex-1 flex-col gap-6 p-6 md:p-8">
+        <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-6 md:p-8">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="space-y-1">
                     <h2 className="font-heading text-2xl font-semibold tracking-tight">
@@ -129,7 +128,7 @@ export function SourceLibrary({ workspaceId }: SourceLibraryProps) {
                     <div className="relative min-w-0 flex-1">
                         <SearchIcon className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
-                            className="rounded-full bg-background pl-9"
+                            className="rounded-full border-border bg-background pl-9"
                             placeholder="Search sources..."
                             value={filters.q ?? ""}
                             onChange={(event) =>
@@ -154,8 +153,12 @@ export function SourceLibrary({ workspaceId }: SourceLibraryProps) {
                                 }))
                             }
                         >
-                            <SelectTrigger className="w-32.5 rounded-full">
-                                <SelectValue placeholder="Type" />
+                            <SelectTrigger className="min-w-28 rounded-full border-border bg-background">
+                                <span className="truncate">
+                                    {filters.type
+                                        ? SOURCE_TYPE_LABELS[filters.type]
+                                        : "All types"}
+                                </span>
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All types</SelectItem>
@@ -179,11 +182,15 @@ export function SourceLibrary({ workspaceId }: SourceLibraryProps) {
                                 }))
                             }
                         >
-                            <SelectTrigger className="w-32.5 rounded-full">
-                                <SelectValue placeholder="Status" />
+                            <SelectTrigger className="min-w-28 rounded-full border-border bg-background">
+                                <span className="truncate">
+                                    {filters.status
+                                        ? SOURCE_STATUS_LABELS[filters.status]
+                                        : "All status"}
+                                </span>
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">All statuses</SelectItem>
+                                <SelectItem value="all">All status</SelectItem>
                                 {SOURCE_STATUSES.map((status) => (
                                     <SelectItem key={status} value={status}>
                                         {SOURCE_STATUS_LABELS[status]}
@@ -353,7 +360,7 @@ export function SourceLibrary({ workspaceId }: SourceLibraryProps) {
                     )}
                 >
                     {sources.map((source) => (
-                        <div key={source.id} className="relative">
+                        <div key={source.id} className="relative h-full">
                             {selectionMode ? (
                                 <div className="absolute top-4 left-4 z-10">
                                     <Checkbox
@@ -373,6 +380,7 @@ export function SourceLibrary({ workspaceId }: SourceLibraryProps) {
                             ) : null}
                             <SourceCard
                                 source={source}
+                                view={view}
                                 onDelete={setDeletingSource}
                                 onReprocess={
                                     source.status === "FAILED"

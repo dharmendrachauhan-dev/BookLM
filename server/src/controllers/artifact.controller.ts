@@ -4,6 +4,7 @@ import {
     deleteArtifactForWorkspace,
     getArtifactForWorkspace,
     listArtifactsForWorkspace,
+    retryArtifactForWorkspace,
 } from "../services/artifact.service.js";
 import {
     artifactIdParamSchema,
@@ -49,4 +50,14 @@ export async function deleteArtifact(req: Request, res: Response) {
         req.session.user.id,
     );
     res.status(204).send();
+}
+
+export async function retryArtifact(req: Request, res: Response) {
+    const { workspaceId, artifactId } = artifactIdParamSchema.parse(req.params);
+    const artifact = await retryArtifactForWorkspace(
+        workspaceId,
+        artifactId,
+        req.session.user.id,
+    );
+    res.json(artifact);
 }

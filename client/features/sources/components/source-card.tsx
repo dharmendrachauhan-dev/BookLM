@@ -10,13 +10,13 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 import { SOURCE_TYPE_LABELS } from "../lib/constants";
 import { sourceRoutes } from "../lib/routes";
 import type { Source } from "../lib/types";
@@ -29,6 +29,7 @@ type SourceCardProps = {
     onDelete?: (source: Source) => void;
     onReprocess?: (source: Source) => void;
     className?: string;
+    view?: "grid" | "list";
 };
 
 export function SourceCard({
@@ -36,90 +37,125 @@ export function SourceCard({
     onDelete,
     onReprocess,
     className,
+    view = "grid",
 }: SourceCardProps) {
     const href = sourceRoutes.detail(source.workspaceId, source.id);
+    const isList = view === "list";
+    const meta = (
+        <CardDescription
+            className={cn(
+                "flex flex-wrap items-center gap-x-2 gap-y-1",
+                isList && "truncate",
+            )}
+        >
+            <span className={cn(isList && "truncate")}>
+                {SOURCE_TYPE_LABELS[source.type]} ·{" "}
+                {formatDistanceToNow(new Date(source.createdAt), {
+                    addSuffix: true,
+                })}
+            </span>
+            <SourceStatusBadge status={source.status} className="shrink-0" />
+        </CardDescription>
+    );
 
     return (
-        <Card className={cn("group/card relative transition-shadow hover:shadow-md", className)}>
+        <Card
+            className={cn(
+                "group/card relative transition-shadow hover:shadow-md",
+                isList ? "h-24" : "h-full min-h-40",
+                className,
+            )}
+        >
             <Link
                 href={href}
-                className="absolute inset-0 z-0 rounded-[inherit] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                aria-label={`Open ${source.title}`}
-            />
-
-            <CardHeader className="relative">
-                <div className="flex items-start justify-between gap-3">
-                    <div className="flex min-w-0 items-start gap-3">
-                        <SourceTypeIcon type={source.type} className="mt-0.5" />
-                        <div className="min-w-0 space-y-1">
+                className={cn(
+                    "h-full rounded-[inherit] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                    isList
+                        ? "flex items-center gap-3 px-(--card-spacing) pr-12"
+                        : "flex flex-col",
+                )}
+            >
+                {isList ? (
+                    <>
+                        <SourceTypeIcon
+                            type={source.type}
+                            className="shrink-0"
+                        />
+                        <div className="min-w-0 flex-1 space-y-1">
                             <CardTitle className="truncate group-hover/card:underline">
                                 {source.title}
                             </CardTitle>
-                            <CardDescription className="flex flex-wrap items-center gap-2">
-                                <span>{SOURCE_TYPE_LABELS[source.type]}</span>
-                                <span>·</span>
-                                <span>
-                                    {formatDistanceToNow(
-                                        new Date(source.createdAt),
-                                        { addSuffix: true },
-                                    )}
-                                </span>
-                            </CardDescription>
+                            {meta}
                         </div>
-                    </div>
+                    </>
+                ) : (
+                    <>
+                        <CardHeader className="flex-1">
+                            <div className="flex min-w-0 items-start gap-3 pr-9">
+                                <SourceTypeIcon
+                                    type={source.type}
+                                    className="mt-0.5 shrink-0"
+                                />
+                                <div className="min-w-0 flex-1 space-y-1">
+                                    <CardTitle className="line-clamp-2 min-h-10 group-hover/card:underline">
+                                        {source.title}
+                                    </CardTitle>
+                                    {meta}
+                                </div>
+                            </div>
+                        </CardHeader>
 
-                    {onDelete || onReprocess ? (
-                        <div
-                            className="relative z-10"
-                            onClick={(event) => event.stopPropagation()}
-                            onKeyDown={(event) => event.stopPropagation()}
+                        <CardContent className="mt-auto">
+                            <p
+                                className={cn(
+                                    "line-clamp-2 text-xs text-muted-foreground",
+                                    !source.content && "invisible",
+                                )}
+                            >
+                                {source.content?.slice(0, 120) ?? "No preview"}
+                            </p>
+                        </CardContent>
+                    </>
+                )}
+            </Link>
+
+            {onDelete || onReprocess ? (
+                <div className="absolute top-(--card-spacing) right-(--card-spacing) z-10">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger
+                            render={
+                                <Button
+                                    variant="outline"
+                                    size="icon-sm"
+                                    className="size-8 bg-card shadow-sm"
+                                />
+                            }
                         >
-                            <DropdownMenu>
-                                <DropdownMenuTrigger
-                                    render={
-                                        <Button
-                                            variant="ghost"
-                                            size="icon-sm"
-                                            className="shrink-0"
-                                        />
-                                    }
+                            <MoreHorizontalIcon />
+                            <span className="sr-only">Open menu</span>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            {onReprocess ? (
+                                <DropdownMenuItem
+                                    onClick={() => onReprocess(source)}
                                 >
-                                    <MoreHorizontalIcon />
-                                    <span className="sr-only">Open menu</span>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    {onReprocess ? (
-                                        <DropdownMenuItem
-                                            onClick={() => onReprocess(source)}
-                                        >
-                                            <RefreshCwIcon />
-                                            Reprocess
-                                        </DropdownMenuItem>
-                                    ) : null}
-                                    {onDelete ? (
-                                        <DropdownMenuItem
-                                            variant="destructive"
-                                            onClick={() => onDelete(source)}
-                                        >
-                                            <Trash2Icon />
-                                            Delete
-                                        </DropdownMenuItem>
-                                    ) : null}
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
-                    ) : null}
+                                    <RefreshCwIcon />
+                                    Reprocess
+                                </DropdownMenuItem>
+                            ) : null}
+                            {onDelete ? (
+                                <DropdownMenuItem
+                                    variant="destructive"
+                                    onClick={() => onDelete(source)}
+                                >
+                                    <Trash2Icon />
+                                    Delete
+                                </DropdownMenuItem>
+                            ) : null}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
-            </CardHeader>
-
-            <CardContent className="relative flex items-center justify-between gap-3">
-                <SourceStatusBadge status={source.status} />
-                {source.content ? (
-                    <p className="line-clamp-1 min-w-0 flex-1 text-right text-xs text-muted-foreground">
-                        {source.content.slice(0, 120)}
-                    </p>
-                ) : null}
-            </CardContent>
+            ) : null}
         </Card>
     );
 }
