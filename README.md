@@ -1,4 +1,4 @@
-# NotebookLLM (Chaibook / BookLLM)
+# BookLM
 
 An AI-powered notebook for learning from your own sources. Upload PDFs, websites, YouTube videos, and text — then chat with citations, generate quizzes, flashcards, mind maps, and more.
 
@@ -354,6 +354,6 @@ prisma/
 
 ---
 
-## License
+## Project Inspired
 
-Private project. Add your license here if open-sourcing.
+Notebook LLM
