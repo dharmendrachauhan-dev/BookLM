@@ -60,7 +60,7 @@ NotebookLLM/
 ### 1. Clone and install
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/dharmendrachauhan-dev/BookLM.git
 cd NotebookLLM
 ```
 
